@@ -19,6 +19,9 @@ app.use((req, res) => {
 })
 
 app.use((err, req, res, next) => {
+   if (err.message.includes("Validation error")) {
+     res.status(400).json({ message: err.message });
+   }
   res.status(500).json({ message: err.message })
 })
 
