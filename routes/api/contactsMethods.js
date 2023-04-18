@@ -94,6 +94,9 @@ async function updateContact(contactId, body) {
 }
 
 async function updateStatusContact(contactId, body) {
+  if (!body.favorite & body.favorite !==false) {
+    return { message: "missing field favorite" };
+  }
   try {
     const { favorite } = body;
     const contact = await Contact.findById(contactId);
