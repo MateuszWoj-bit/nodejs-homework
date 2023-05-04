@@ -1,3 +1,4 @@
+const Joi = require("joi");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
@@ -70,6 +71,16 @@ async function removeContact(contactId) {
 }
 
 const addContact = async (name, email, phone) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).max(50).required(),
+    email: Joi.string().email().required(),
+    phone: Joi.string().min(6).max(20).required(),
+  });
+
+  const validation = schema.validate({ name, email, phone });
+  if (validation.error) {
+    throw new Error(`Validation error: ${validation.error.message}`);
+  }
   try {
     const newContact = new Contact({ name, email, phone });
     await newContact.save();
@@ -80,6 +91,18 @@ const addContact = async (name, email, phone) => {
 };
 
 async function updateContact(contactId, body) {
+const schema = Joi.object({
+  name: Joi.string().min(2).max(50),
+  email: Joi.string().email(),
+  phone: Joi.string().min(6).max(20),
+});
+
+const validation = schema.validate(body);
+if (validation.error) {
+  console.log(validation.error.message);
+  throw new Error(`Validation error: ${validation.error.message}`);
+}
+
   try {
     const contact = await Contact.findByIdAndUpdate(contactId, body, {
       new: true,
@@ -94,9 +117,15 @@ async function updateContact(contactId, body) {
 }
 
 async function updateStatusContact(contactId, body) {
-  if (!body.favorite & body.favorite !==false) {
-    return { message: "missing field favorite" };
-  }
+ const schema = Joi.object({
+   favorite: Joi.boolean().required(),
+ });
+
+ const validationResult = schema.validate(body);
+
+ if (validationResult.error) {
+   return { message: "missing field favorite" };
+ }
   try {
     const { favorite } = body;
     const contact = await Contact.findById(contactId);
@@ -110,7 +139,6 @@ async function updateStatusContact(contactId, body) {
     throw new Error(`Error updating contact: ${err.message}`);
   }
 }
-
 
 module.exports = {
   listContacts,
