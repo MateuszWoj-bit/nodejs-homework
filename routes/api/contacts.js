@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../../middleware/auth");
  const {
    listContacts,
    getById,
@@ -7,7 +8,8 @@ const router = express.Router();
    addContact,
    updateContact,
    updateStatusContact,
- } = require("./contactsMethods");
+} = require("./contactsMethods");
+
 
 // GET /api/contacts
 router.get("/", async (req, res, next) => {
@@ -20,7 +22,7 @@ router.get("/", async (req, res, next) => {
 });
 
 // GET /api/contacts/:id
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", auth, async (req, res, next) => {
   const id = req.params.id;
   try {
     const contact = await getById(id);
