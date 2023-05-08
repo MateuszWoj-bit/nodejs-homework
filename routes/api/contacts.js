@@ -1,18 +1,19 @@
 const express = require("express");
 const router = express.Router();
  const {
-  listContacts,
-  getById,
-  removeContact,
-  addContact,
-  updateContact,
-} = require("./contactsMethods");
+   listContacts,
+   getById,
+   removeContact,
+   addContact,
+   updateContact,
+   updateStatusContact,
+ } = require("./contactsMethods");
 
 // GET /api/contacts
 router.get("/", async (req, res, next) => {
   try {
     const contacts = await listContacts();
-    res.status(200).json(contacts);
+    res.status(200).json(contacts);    
   } catch (err) {
     next(err);
   }
@@ -35,6 +36,7 @@ router.get("/:id", async (req, res, next) => {
 
 // POST /api/contacts
 router.post("/", async (req, res, next) => { 
+  console.log(req.body);
   const { name, email, phone } = req.body;
   if (!name || !email || !phone) {
    const missingFields = [];
@@ -96,6 +98,25 @@ router.put("/:id", async (req, res, next) => {
     res.status(200).json(updatedContact);
   } catch (err) {
     next(err);
+  }
+});
+
+// PATCH /api/contacts/:contactId/favorite
+router.patch("/:contactId/favorite", async (req, res) => {
+  const { favorite } = req.body;
+
+  try {
+    const updatedContact = await updateStatusContact(req.params.contactId, {
+      favorite,
+    });
+    if (updatedContact) {
+      return res.status(200).json(updatedContact);
+    } else {
+      return res.status(404).json({ message: "Not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 

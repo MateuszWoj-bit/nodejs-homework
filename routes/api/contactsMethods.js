@@ -1,12 +1,45 @@
 const Joi = require("joi");
-const fs = require("fs/promises");
-const path = require("path");
-const contactsPath = path.join(__dirname, "db", "contacts.json");
+const mongoose = require("mongoose");
+require("dotenv").config();
+
+mongoose.connect(process.env.SECRET_KEY, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+
+db.on("error", (err) => {
+  console.error(`Connection error: ${err.message}`);
+  process.exit(1);
+});
+
+db.once("open", () => {
+  console.log("Database connection successful");
+});
+
+const contactSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Set name for contact"],
+  },
+  email: {
+    type: String,
+  },
+  phone: {
+    type: String,
+  },
+  favorite: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const Contact = mongoose.model("Contact", contactSchema);
 
 async function listContacts() {
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
+    const contacts = await Contact.find();
     return contacts;
   } catch (err) {
     throw new Error(`Error getting contacts: ${err.message}`);
@@ -15,10 +48,8 @@ async function listContacts() {
 
 async function getById(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    const contact = contacts.find((c) => c.id === contactId);
-    if (contact === undefined) {
+    const contact = await Contact.findById(contactId);
+    if (!contact) {
       return `id ${contactId} not found`;
     }
     return contact;
@@ -29,14 +60,10 @@ async function getById(contactId) {
 
 async function removeContact(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    const contact = contacts.find((c) => c.id === contactId);
-    if (contact === undefined) {
+    const contact = await Contact.findByIdAndDelete(contactId);
+    if (!contact) {
       return `Id ${contactId} not found, no contact deleted`;
     }
-    const updatedContacts = contacts.filter((c) => c.id !== contactId);
-    await fs.writeFile(contactsPath, JSON.stringify(updatedContacts));
     return contact;
   } catch (err) {
     throw new Error(`Error removing contact: ${err.message}`);
@@ -54,15 +81,9 @@ const addContact = async (name, email, phone) => {
   if (validation.error) {
     throw new Error(`Validation error: ${validation.error.message}`);
   }
-
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    const lastContact = contacts[contacts.length - 1];
-    const newId = parseInt(lastContact.id) + 1;
-    const newContact = { id: newId.toString(), name, email, phone };
-    contacts.push(newContact);
-    await fs.writeFile(contactsPath, JSON.stringify(contacts));
+    const newContact = new Contact({ name, email, phone });
+    await newContact.save();
     return newContact;
   } catch (err) {
     throw new Error(`Error adding contact: ${err.message}`);
@@ -70,38 +91,50 @@ const addContact = async (name, email, phone) => {
 };
 
 async function updateContact(contactId, body) {
-  const schema = Joi.object({
-    name: Joi.string().min(2).max(50),
-    email: Joi.string().email(),
-    phone: Joi.string().min(6).max(20),
-  });
+const schema = Joi.object({
+  name: Joi.string().min(2).max(50),
+  email: Joi.string().email(),
+  phone: Joi.string().min(6).max(20),
+});
 
-  const validation = schema.validate(body);
-    if (validation.error) {
-      console.log(validation.error.message);
-    throw new Error(`Validation error: ${validation.error.message}`);
-  }
+const validation = schema.validate(body);
+if (validation.error) {
+  console.log(validation.error.message);
+  throw new Error(`Validation error: ${validation.error.message}`);
+}
 
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    const contactIndex = contacts.findIndex(
-      (contact) => contact.id === contactId
-    );
-
-    if (contactIndex === -1) {
+    const contact = await Contact.findByIdAndUpdate(contactId, body, {
+      new: true,
+    });
+    if (!contact) {
       return null;
     }
+    return contact;
+  } catch (err) {
+    throw new Error(`Error updating contact: ${err.message}`);
+  }
+}
 
-    contacts[contactIndex] = {
-      ...contacts[contactIndex],
-      ...body,
-      id: contactId,
-    };
+async function updateStatusContact(contactId, body) {
+ const schema = Joi.object({
+   favorite: Joi.boolean().required(),
+ });
 
-    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+ const validationResult = schema.validate(body);
 
-    return contacts[contactIndex];
+ if (validationResult.error) {
+   return { message: "missing field favorite" };
+ }
+  try {
+    const { favorite } = body;
+    const contact = await Contact.findById(contactId);
+    if (!contact) {
+      return null;
+    }
+    contact.favorite = favorite;
+    await contact.save();
+    return contact;
   } catch (err) {
     throw new Error(`Error updating contact: ${err.message}`);
   }
@@ -113,4 +146,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 };
