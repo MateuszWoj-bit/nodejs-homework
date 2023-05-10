@@ -11,7 +11,7 @@ const auth = require("../../middleware/auth");
 } = require("./contactsMethods");
 
 
-// GET /api/contacts
+
 router.get("/", auth, async (req, res, next) => {
   try {
     const contacts = await listContacts();
@@ -21,7 +21,7 @@ router.get("/", auth, async (req, res, next) => {
   }
 });
 
-// GET /api/contacts/:id
+
 router.get("/:id", auth, async (req, res, next) => {
   const id = req.params.id;
   try {
@@ -36,7 +36,7 @@ router.get("/:id", auth, async (req, res, next) => {
   }
 });
 
-// POST /api/contacts
+
 router.post("/", auth, async (req, res, next) => {
   console.log(req.body);
   const { name, email, phone } = req.body;
@@ -60,7 +60,7 @@ router.post("/", auth, async (req, res, next) => {
   }
 });
 
-// DELETE /api/contacts/:id
+
 router.delete("/:id", auth, async (req, res, next) => {
   const id = req.params.id;
   try {
@@ -75,7 +75,7 @@ router.delete("/:id", auth, async (req, res, next) => {
   }
 });
 
-// PUT /api/contacts/:id
+
 router.put("/:id", auth, async (req, res, next) => {
   const contactId = req.params.id;
   const { name, email, phone } = req.body;
@@ -103,7 +103,7 @@ router.put("/:id", auth, async (req, res, next) => {
   }
 });
 
-// PATCH /api/contacts/:contactId/favorite
+
 router.patch("/:contactId/favorite", auth, async (req, res) => {
   const { favorite } = req.body;
 

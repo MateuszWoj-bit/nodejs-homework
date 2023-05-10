@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-// const gravatar = require("gravatar");
+
 
 const userSchema = new Schema({
   password: {
@@ -26,16 +26,6 @@ const userSchema = new Schema({
   },
 });
 
-// userSchema.pre("save", async function (next) {
-//   if (!this.avatarURL) {
-//     this.avatarURL = gravatar.url(this.email, {
-//       s: "200",
-//       r: "pg",
-//       d: "retro",
-//     });
-//   }
-//   next();
-// });
 
 const User = mongoose.model("user", userSchema);
 

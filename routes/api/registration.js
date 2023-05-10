@@ -164,7 +164,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// PATCH /users/avatars
+
 router.patch("/avatars", auth, upload.single("avatar"), async (req, res) => {
   try {    
     const { error } = avatarPatchSchema.validate(req.body);
