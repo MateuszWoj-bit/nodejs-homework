@@ -1,3 +1,4 @@
+const Joi = require("joi");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const { Schema } = mongoose;
@@ -128,7 +129,6 @@ async function updateStatusContact(contactId, body) {
     throw new Error(`Error updating contact: ${err.message}`);
   }
 }
-
 
 module.exports = {
   listContacts,

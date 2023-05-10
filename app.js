@@ -10,24 +10,20 @@ const usersRouter = require("./routes/api/registration");
 
 const app = express();
 
-// Set up database connection
 mongoose.connect(process.env.SECRET_KEY, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// Log successful connection
 mongoose.connection.on("connected", () => {
   console.log("Database connection successful");
 });
 
-// Log connection error
 mongoose.connection.on("error", (err) => {
   console.error(`Database connection error: ${err}`);
   process.exit(1);
 });
 
-// Set up middleware
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 
 app.use(logger(formatsLogger));
@@ -36,7 +32,6 @@ app.use(express.json());
 
 app.use(express.static("public"));
 
-// Set up routes
 app.use("/api/contacts", contactsRouter);
 app.use("/api/users", usersRouter);
 

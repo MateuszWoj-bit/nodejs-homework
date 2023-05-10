@@ -1,30 +1,54 @@
-const jwt = require("jsonwebtoken");
+const passport = require("passport");
+const passportJWT = require("passport-jwt");
 const User = require("../models/user");
+const checkToken = require("./checkToken")
+require("dotenv").config();
+const secret = process.env.JWT_SECRET;
 
-function auth(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) {
-    return res.status(401).json({ message: "Not authorized" });
-  }
+const ExtractJWT = passportJWT.ExtractJwt;
+const Strategy = passportJWT.Strategy;
+const params = {
+  secretOrKey: secret,
+  jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
+};
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+passport.use(
+  new Strategy(params, function (payload, done) {
+    User.find({ _id: payload.id })
+      .then(([user]) => {
+        if (!user) {
+          return done(new Error("User not found"));
+        }
+        return done(null, user);
+      })
+      .catch((err) => done(err));
+  })
+);
 
-    User.findById(userId, (err, user) => {
-      if (err) {
-        return res.status(401).json({ message: "Not authorized" });
+const auth = (req, res, next) => {
+  checkToken(req, res, (err) => {
+    if (err) {
+      return res.status(401).json({
+        status: "error",
+        code: 401,
+        message: "Unauthorized",
+        data: "Unauthorized",
+      });
+    }
+
+    passport.authenticate("jwt", { session: false }, (err, user) => {
+      if (!user || err) {
+        return res.status(401).json({
+          status: "error",
+          code: 401,
+          message: "Unauthorized",
+          data: "Unauthorized",
+        });
       }
-      if (!user) {
-        return res.status(401).json({ message: "Not authorized" });
-      }
-
       req.user = user;
       next();
-    });
-  } catch (err) {
-    return res.status(401).json({ message: "Not authorized" });
-  }
-}
+    })(req, res, next);
+  });
+};
 
 module.exports = auth;
