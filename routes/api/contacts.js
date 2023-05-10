@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../../middleware/auth");
  const {
    listContacts,
    getById,
@@ -7,20 +8,21 @@ const router = express.Router();
    addContact,
    updateContact,
    updateStatusContact,
- } = require("./contactsMethods");
+} = require("./contactsMethods");
+
 
 // GET /api/contacts
-router.get("/", async (req, res, next) => {
+router.get("/", auth, async (req, res, next) => {
   try {
     const contacts = await listContacts();
-    res.status(200).json(contacts);    
+    res.status(200).json(contacts);
   } catch (err) {
     next(err);
   }
 });
 
 // GET /api/contacts/:id
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", auth, async (req, res, next) => {
   const id = req.params.id;
   try {
     const contact = await getById(id);
@@ -35,31 +37,31 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // POST /api/contacts
-router.post("/", async (req, res, next) => { 
+router.post("/", auth, async (req, res, next) => {
   console.log(req.body);
   const { name, email, phone } = req.body;
   if (!name || !email || !phone) {
-   const missingFields = [];
-   if (!name) missingFields.push("name");
-   if (!email) missingFields.push("email");
-   if (!phone) missingFields.push("phone");
-   res
-     .status(400)
-     .json({
-       message: `The following mandatory fields are missing: ${missingFields.join(", ")}`,
-     });
-    return
+    const missingFields = [];
+    if (!name) missingFields.push("name");
+    if (!email) missingFields.push("email");
+    if (!phone) missingFields.push("phone");
+    res.status(400).json({
+      message: `The following mandatory fields are missing: ${missingFields.join(
+        ", "
+      )}`,
+    });
+    return;
   }
   try {
     const newContact = await addContact(name, email, phone);
     res.status(201).json(newContact);
-  } catch (err) {    
+  } catch (err) {
     next(err);
   }
 });
 
 // DELETE /api/contacts/:id
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", auth, async (req, res, next) => {
   const id = req.params.id;
   try {
     const deletedContact = await removeContact(id);
@@ -74,7 +76,7 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 // PUT /api/contacts/:id
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", auth, async (req, res, next) => {
   const contactId = req.params.id;
   const { name, email, phone } = req.body;
 
@@ -102,7 +104,7 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // PATCH /api/contacts/:contactId/favorite
-router.patch("/:contactId/favorite", async (req, res) => {
+router.patch("/:contactId/favorite", auth, async (req, res) => {
   const { favorite } = req.body;
 
   try {

@@ -1,22 +1,8 @@
 const Joi = require("joi");
 const mongoose = require("mongoose");
 require("dotenv").config();
-
-mongoose.connect(process.env.SECRET_KEY, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-const db = mongoose.connection;
-
-db.on("error", (err) => {
-  console.error(`Connection error: ${err.message}`);
-  process.exit(1);
-});
-
-db.once("open", () => {
-  console.log("Database connection successful");
-});
+const { Schema } = mongoose;
+const Joi = require("joi");
 
 const contactSchema = new mongoose.Schema({
   name: {
@@ -32,6 +18,10 @@ const contactSchema = new mongoose.Schema({
   favorite: {
     type: Boolean,
     default: false,
+  },
+  owner: {
+    type: Schema.Types.ObjectId,
+    ref: "user",
   },
 });
 
