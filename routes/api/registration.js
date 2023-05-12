@@ -2,7 +2,11 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Joi = require("joi");
-
+const gravatar = require("gravatar");
+const multer = require("multer");
+const path = require("path");
+const jimp = require("jimp");
+const { v4: uuidv4 } = require("uuid");
 
 require("dotenv").config();
 const secret = process.env.SECRET;
@@ -22,6 +26,11 @@ const userLoginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
+const avatarPatchSchema = Joi.object({
+  avatar: Joi.any().required(),
+});
+
+
 
 router.post("/signup", async (req, res) => {
   try {    
@@ -37,10 +46,18 @@ router.post("/signup", async (req, res) => {
     }
 
     
+    const avatarURL = gravatar.url(req.body.email, {
+      s: "200",
+      r: "pg",
+      d: "retro",
+    });
+
+       
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const newUser = new User({
       email: req.body.email,
       password: hashedPassword,
+      avatarURL: avatarURL,
     });
     const savedUser = await newUser.save();
 
@@ -49,6 +66,7 @@ router.post("/signup", async (req, res) => {
       user: {
         email: savedUser.email,
         subscription: savedUser.subscription,
+        avatarURL: savedUser.avatarURL,
       },
     });
   } catch (err) {
@@ -132,6 +150,43 @@ router.get("/current", auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./tmp");
+  },
+  filename: function (req, file, cb) {
+    cb(null, uuidv4() + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage: storage });
+
+
+router.patch("/avatars", auth, upload.single("avatar"), async (req, res) => {
+  try {    
+    const { error } = avatarPatchSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const avatarPath = path.join(__dirname, "../", req.file.path);
+    const avatar = await jimp.read(avatarPath);
+    await avatar.cover(250, 250).writeAsync(avatarPath);
+    
+    const avatarFileName = uuidv4() + path.extname(req.file.originalname);
+    const avatarPublicPath = path.join(__dirname, "../public/avatars", avatarFileName);
+    await jimp.read(avatarPath);
+    await avatar.writeAsync(avatarPublicPath);
+  
+    req.user.avatarURL = `/avatars/${avatarFileName}`;
+    await req.user.save();
+
+    return res.status(200).json({ avatarURL: req.user.avatarURL });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 

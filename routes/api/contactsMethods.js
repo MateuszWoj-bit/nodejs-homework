@@ -2,7 +2,6 @@ const Joi = require("joi");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const { Schema } = mongoose;
-const Joi = require("joi");
 
 const contactSchema = new mongoose.Schema({
   name: {
